@@ -1,7 +1,7 @@
-from fastapi import FastAPI
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 import subprocess
-from pathlib import Path  # Import Path from pathlib
+from pathlib import Path
+from transformers import pipeline
 
 app = FastAPI()
 
@@ -9,6 +9,9 @@ app = FastAPI()
 Path("../logs/stock").mkdir(parents=True, exist_ok=True)
 Path("../saved_models/stock").mkdir(parents=True, exist_ok=True)
 Path("../data/disease-prediction").mkdir(parents=True, exist_ok=True)
+
+# Load the text classification pipeline for disease prediction
+disease_pipe = pipeline("text-classification", model="shanover/symps_disease_bert_v3_c41")
 
 @app.post("/train")
 async def train_model(epochs: int):
@@ -37,5 +40,19 @@ async def train_model(epochs: int):
             error_message = stderr.decode() if stderr else "Unknown error"
             return {"error": error_message}
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/predict_disease")
+async def predict_disease(input_text: dict):
+    try:
+        # Get the prediction
+        prediction = disease_pipe(input_text["text"])
+        
+        # Extract the predicted label and confidence
+        label = prediction[0]['label']
+        confidence = prediction[0]['score']
+
+        return {"label": label, "confidence": confidence}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
