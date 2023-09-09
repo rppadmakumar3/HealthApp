@@ -8,11 +8,23 @@ services:
       - "8501:8501"
     networks:
       - mynetwork
+    depends_on:
+      - disease_prediction
+      - visual_quality_inspection
+
   disease_prediction:
     build:
       context: ./backend/disease_prediction
     ports:
       - "8000:8000"
+    networks:
+      - mynetwork
+
+  visual_quality_inspection:
+    build:
+      context: ./backend/visual_quality_inspection
+    ports:
+      - "8001:8000"  # Adjust the port if needed
     networks:
       - mynetwork
 
